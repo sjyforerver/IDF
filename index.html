@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark" data-color="kr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
+<meta name="theme-color" content="#0A0D13">
+<meta name="color-scheme" content="dark light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="IDF Web — KRX·OpenDART·한국은행·네이버 API 연동 IR 데이터 대시보드">
+<script>
+/* 첫 페인트 전 테마·색상 복원 (FOUC 방지) */
+(function(){try{var r=document.documentElement,t=localStorage.getItem('idf_theme'),c=localStorage.getItem('idf_color');
+if(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)t='light';
+if(t)r.setAttribute('data-theme',t);if(c)r.setAttribute('data-color',c);}catch(e){}})();
+</script>
+<title>IDF · IR Data Factory</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/app.css">
+<link rel="modulepreload" href="assets/js/app.js">
+</head>
+<body class="locked">
+<div class="top-progress" id="topProgress"></div>
+
+<!-- 로그인 게이트 -->
+<div class="gate" id="gate" data-state="checking" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <div class="gate-card">
+    <img class="brand-mark lg" src="assets/icon.svg" alt="">
+    <h1 id="gateTitle">IDF</h1>
+    <p class="gate-sub">IR Data Factory · Web</p>
+    <ul class="gate-feats">
+      <li>KRX 시세</li><li>OpenDART 재무·공시</li><li>한국은행 지표</li><li>네이버 뉴스</li>
+    </ul>
+    <button class="gate-btn" id="gateBtn" type="button">
+      <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      <span>확인 중…</span>
+    </button>
+    <p class="gate-msg" id="gateMsg" role="status"></p>
+    <p class="gate-note" id="gateNote">승인된 Google 계정만 이용할 수 있습니다.</p>
+  </div>
+</div>
+
+<header class="app-header">
+  <div class="hdr-inner">
+    <div class="brand-box" id="brandHome" role="link" tabindex="0">
+      <img class="brand-mark" src="assets/icon.svg" alt="">
+      <div class="brand-name">IDF <span class="brand-sub">IR Data Factory</span><span class="sync-dot" title="연결됨"></span></div>
+    </div>
+    <nav class="top-nav" id="topNav" aria-label="주 메뉴"></nav>
+    <div class="hdr-actions">
+      <button class="hdr-btn icon-only" id="btnRefresh" title="새로고침" aria-label="새로고침"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></svg></button>
+      <button class="hdr-btn icon-only theme-btn" id="btnTheme" title="테마 전환" aria-label="테마 전환"></button>
+      <button class="hdr-btn icon-only" id="btnLogout" title="로그아웃" aria-label="로그아웃"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+      <span class="user-chip" id="userChip"></span>
+    </div>
+  </div>
+  <div class="tape-bar" id="tapeBar" hidden>
+    <div class="tape-inner" id="tapeInner"></div>
+    <span class="tape-date num" id="tapeDate"></span>
+  </div>
+</header>
+
+<main class="main-wrap" id="view" tabindex="-1"></main>
+
+<nav class="tab-bar" id="tabBar" aria-label="하단 메뉴"></nav>
+<div class="sheet" id="moreSheet"><div class="sheet-panel"><div class="sheet-grip"></div><div class="sheet-body"></div></div></div>
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
