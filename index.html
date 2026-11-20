@@ -744,7 +744,7 @@ svg.chart .hl{fill:var(--brand-soft)}
 <!-- ==================== LOCK VAULT (Felizsnoo Journal ADA 디자인 동일) ==================== -->
 <div id="masterLockGateOverlay" role="dialog" aria-modal="true" aria-label="보안 로그인 게이트">
   <div class="vault-topbar">
-    <span class="vault-pill-btn" style="cursor:default"><span class="sync-dot"></span><span>IDF Web v2.3.5</span></span>
+    <span class="vault-pill-btn" style="cursor:default"><span class="sync-dot"></span><span>IDF Web v2.3.6</span></span>
     <button type="button" class="vault-pill-btn" id="vaultTheme" title="다크 / 라이트 글라스 전환"><span>🌓 테마 전환</span></button>
   </div>
   <div class="lock-card">
@@ -812,7 +812,7 @@ svg.chart .hl{fill:var(--brand-soft)}
 <div class="sheet" id="moreSheet"><div class="sheet-panel"><div class="sheet-grip"></div><div class="sheet-body"></div></div></div>
 <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
 
-<script type="module">/* IDF Web v2.3.5 — Bundled ES Module (100% Live API, 0 Hardcoded Financials) */
+<script type="module">/* IDF Web v2.3.6 — Bundled ES Module (100% Live API, 0 Hardcoded Financials) */
 const __M = Object.create(null), __C = Object.create(null);
 function __R(id) { if (__C[id]) return __C[id]; const fn = __M[id]; if (!fn) throw new Error('Missing module: ' + id); return (__C[id] = fn() || {}); }
 __M['api.js'] = function() {
@@ -2172,7 +2172,7 @@ return { PALETTE, lineChart, barChart, sparkline, disposeCharts, groupedBars };
 __M['config.js'] = function() {
 /* IDF Web — 기본 설정 (공개 저장소: 비밀값을 넣지 않습니다) */
 
-const APP = { name: 'IDF', fullName: 'IR Data Factory', version: '2.3.5' };
+const APP = { name: 'IDF', fullName: 'IR Data Factory', version: '2.3.6' };
 
 /**
  * Firebase 웹 설정은 공개용 식별자입니다(비밀키 아님).
@@ -3299,7 +3299,7 @@ function makeCalc(data, opts = {}) {
         }
         const xb = endX?.borrow?.end;
         if (xb && Number.isFinite(xb.total)) {
-          const used = Object.values(xb.items).filter(Boolean).map((x) => `${x.label} ${Math.round(x.net / 1e8).toLocaleString('ko-KR')}억${x.disc ? '(할인차감)' : ''}`);
+          const used = Object.values(xb.items).filter(Boolean).map((x) => `${x.label} ${Math.round(x.net / 1e8).toLocaleString('ko-KR')}억${x.disc ? `(할인-${Math.round(x.disc / 1e8).toLocaleString('ko-KR')}억)` : ''}`);
           return { value: xb.total, note: `XBRL 주석 총차입금(순액·리스 포함): ${used.join(' + ')}`, src: xSrcOf(endX), xbrl: true };
         }
         return NA('본문 차입금 미분리(단기·장기금융부채 통합) — [XBRL 주석 보완] 실행 시 주석에서 추출');
@@ -3308,9 +3308,22 @@ function makeCalc(data, opts = {}) {
         const a = endRep.acc.currentLongBorrow; const b = endRep.acc.currentBonds;
         if (a?.dup || b?.dup) return NA('계정 중복(판단 불가)');
         const has = (x) => x && x.end !== null && x.end !== undefined;
+        const xb0 = endX?.borrow?.end;
         if (has(a) || has(b)) {
+          let val = (has(a) ? a.end : 0) + (has(b) ? b.end : 0);
           const parts = [has(a) && `유동성장기부채 ${a.acc.split(' · ')[1].split(' (')[0]}`, has(b) && '유동성사채'].filter(Boolean);
-          return { value: (has(a) ? a.end : 0) + (has(b) ? b.end : 0), note: `단기상환부담액 = 유동성장기부채 + 유동성사채 (${parts.join(', ')} · 미표시 0)`, src: srcOf(endRep), logic: true };
+          let usedXb = false;
+          if (!has(b) && xb0?.items?.currentBonds?.net > 0 && !(has(a) && /사채/.test(clean(a.acc.split(' · ')[1].split(' (')[0])))) {
+            val += xb0.items.currentBonds.net;
+            parts.push(`유동성사채 ${Math.round(xb0.items.currentBonds.net / 1e8).toLocaleString('ko-KR')}억(XBRL)`);
+            usedXb = true;
+          }
+          if (!has(a) && xb0?.items?.currentLongBorrow?.net > 0) {
+            val += xb0.items.currentLongBorrow.net;
+            parts.push(`유동성장기부채 ${Math.round(xb0.items.currentLongBorrow.net / 1e8).toLocaleString('ko-KR')}억(XBRL)`);
+            usedXb = true;
+          }
+          return { value: val, note: `단기상환부담액 = 유동성장기부채 + 유동성사채 (${parts.join(', ')})`, src: usedXb ? `${srcOf(endRep)} + ${xSrcOf(endX)}` : srcOf(endRep), logic: !usedXb, xbrl: usedXb };
         }
         // 유동성 장기차입금 + 사채 결합 계정(예: 유동성장기차입금및사채, DL이앤씨 등) 인식 — 단기차입금·리스 포함 행은 제외
         const curMatRows = (endRep.rows || []).filter((r) => {
@@ -5831,7 +5844,7 @@ const { api, ApiError, isForcing } = __R('api.js');
 const { store } = __R('cache.js');
 
 const REPRT = { 1: '11013', 2: '11012', 3: '11014', 4: '11011' };
-const PARSER_VERSION = 6;                 // v2.3.5: 비현금거래 배제·사채포함 괄호 수정·이자/상각비 정밀화
+const PARSER_VERSION = 7;                 // v2.3.6: 유동성장기·유동성사채 할인차금 전수 추출 + 단기금융부채 표/typedMember 지원
 const KEEP = 10 * 365 * 86400e3;
 const MAX_UNZIPPED = 80 * 1024 * 1024;
 const MAX_ENTRIES = 300;
@@ -5953,7 +5966,8 @@ function parseInstance(xml) {
     let d;
     while ((d = dre.exec(body)) !== null) {
       const axis = toKey(attrsOf(d[2]).dimension);
-      dims.push({ axis, member: d[1] === 'explicitMember' ? toKey(d[3].replace(/<[^>]+>/g, '')) : 'typed' });
+      const rawTxt = d[3].replace(/<[^>]+>/g, '').trim();
+      dims.push({ axis, member: d[1] === 'explicitMember' ? toKey(rawTxt) : (rawTxt ? `typed_${rawTxt}` : 'typed') });
     }
     contexts[id] = { id, start: tag('startDate'), end: tag('endDate'), instant: tag('instant'), dims };
   }
@@ -6008,17 +6022,27 @@ const INTEREST = {
 };
 const BORROW_NOTE = {
   shortBorrow: { c: ['ifrs-full_ShorttermBorrowings', 'dart_ShortTermBorrowings'], l: ['단기차입금', '단기사채', '단기차입금및단기사채'] },
-  currentLongBorrow: { c: ['ifrs-full_CurrentPortionOfLongtermBorrowings', 'dart_CurrentPortionOfLongTermBorrowings', 'dart_CurrentPortionOfLongtermBorrowings'], l: ['유동성장기차입금', '유동성장기부채', '유동성장기차입부채', '유동성장기차입금및사채', '유동성장기부채및사채', '유동성사채및장기차입금'] },
-  currentLongDisc: { c: [], l: ['유동성장기차입금현재가치할인차금', '유동성장기부채현재가치할인차금', '유동성장기차입금할인차금'] },
-  currentBonds: { c: ['dart_CurrentPortionOfBonds', 'ifrs-full_CurrentPortionOfBondsIssued', 'dart_CurrentPortionOfBondsIssued'], l: ['유동성사채', '유동성회사채', '유동성사채및전환사채'] },
-  currentBondsDisc: { c: [], l: ['유동성사채할인발행차금', '유동성사채현재가치할인차금'] },
+  currentLongBorrow: { c: ['ifrs-full_CurrentPortionOfLongtermBorrowings', 'dart_CurrentPortionOfLongTermBorrowings', 'dart_CurrentPortionOfLongtermBorrowings', 'dart_CurrentPortionOfLongTermBorrowingsGross'], l: ['유동성장기차입금', '유동성장기부채', '유동성장기차입부채', '유동성차입금', '유동성장기차입금및사채', '유동성장기부채및사채', '유동성사채및장기차입금'] },
+  currentLongDisc: { c: ['dart_PresentValueDiscountsCurrentPortionOfLongTermBorrowings', 'dart_CurrentPortionOfLongTermBorrowingsPresentValueDiscount'], l: ['유동성장기차입금현재가치할인차금', '유동성장기부채현재가치할인차금', '유동성장기차입금할인차금', '유동성장기차입금의현재가치할인차금', '현재가치할인차금유동성장기차입금', '유동성장기차입금할인발행차금'] },
+  currentBonds: { c: ['dart_CurrentPortionOfBonds', 'ifrs-full_CurrentPortionOfBondsIssued', 'dart_CurrentPortionOfBondsIssued', 'dart_CurrentPortionOfCorporateBonds', 'dart_CurrentPortionOfBondsGross'], l: ['유동성사채', '유동성회사채', '유동성일반사채', '유동성공모사채', '유동성무보증사채', '유동성사채및전환사채'] },
+  currentBondsDisc: { c: ['dart_DiscountOnCurrentPortionOfBonds', 'dart_CurrentPortionOfBondsDiscount', 'dart_PresentValueDiscountsCurrentPortionOfBonds'], l: ['유동성사채할인발행차금', '유동성사채현재가치할인차금', '유동성사채할인차금', '유동성사채의할인발행차금', '사채할인발행차금유동성사채', '유동성회사채할인발행차금'] },
   currentLease: { c: ['ifrs-full_CurrentLeaseLiabilities', 'dart_CurrentLeaseLiabilities'], l: ['유동리스부채', '유동성리스부채', '단기리스부채', '리스부채(유동)'] },
   longBorrow: { c: ['ifrs-full_LongtermBorrowings', 'dart_LongTermBorrowings', 'dart_LongTermBorrowingsGross'], l: ['장기차입금', '비유동차입금'] },
-  longBorrowDisc: { c: [], l: ['장기차입금현재가치할인차금', '장기차입금할인차금'] },
+  longBorrowDisc: { c: ['dart_PresentValueDiscountsLongTermBorrowings'], l: ['장기차입금현재가치할인차금', '장기차입금할인차금', '장기차입금의현재가치할인차금'] },
   bonds: { c: ['dart_BondsIssued', 'ifrs-full_BondsIssued', 'dart_NoncurrentBondsIssued'], l: ['사채', '회사채', '비유동사채'] },
-  bondsDisc: { c: [], l: ['사채할인발행차금', '사채현재가치할인차금'] },
+  bondsDisc: { c: ['dart_DiscountOnBondsIssued', 'dart_DiscountOnBondsPayable'], l: ['사채할인발행차금', '사채현재가치할인차금', '사채의할인발행차금'] },
   longLease: { c: ['ifrs-full_NoncurrentLeaseLiabilities', 'dart_NoncurrentLeaseLiabilities'], l: ['비유동리스부채', '장기리스부채', '리스부채(비유동)'] },
   totalLease: { c: ['ifrs-full_LeaseLiabilities'], l: ['총리스부채', '리스부채합계'] },
+};
+const DISC_FLEX_RE = {
+  currentLongDisc: {
+    ko: /(유동성장기(차입|부채)|유동성차입|유동성비유동차입).*(할인차금|할인발행차금)|(할인차금|할인발행차금).*유동성장기/,
+    en: /(CurrentPortion.*(LongTerm|Longterm).*Borrow.*Discount|Discount.*CurrentPortion.*Borrow|PresentValueDiscount.*CurrentPortion.*Borrow)/i,
+  },
+  currentBondsDisc: {
+    ko: /유동성(사채|회사채).*(할인발행차금|할인차금)|(할인발행차금|할인차금).*유동성(사채|회사채)/,
+    en: /(CurrentPortion.*Bond.*Discount|Discount.*CurrentPortion.*Bond)/i,
+  },
 };
 const BORROW_MAIN_KEYS = ['shortBorrow', 'currentLongBorrow', 'currentBonds', 'currentLease', 'longBorrow', 'bonds', 'longLease'];
 
@@ -6036,18 +6060,23 @@ const CONTRA_CARRYING_KO_RE = /(취득원가|총장부금액|감가상각누계|
 const CONTRA_CARRYING_DEP_KO_RE = /(취득원가|총장부금액|대손충당금|손실충당금|공정가치|재평가)/;
 
 const NEUTRAL_MEMBER_RE = /^(ifrs-full|dart)_(Total)?(PropertyPlantAndEquipment|IntangibleAssetsOtherThanGoodwill|InvestmentProperty|RightofuseAssets|CarryingAmount|BookValue|DisclosedAmount|DisclosureAmount|ReportedAmount|PresentationAmount|NoteAmount|AccumulatedDepreciationAndAmortisation|AccumulatedDepreciationAmortisationAndImpairment|Total|FinancialLiabilities|FinancialAssets|Borrowings|LeaseLiabilities)Member$/;
+const NEUTRAL_ANY_PREFIX_RE = /(DisclosedAmount|DisclosureAmount|ReportedAmount|PresentationAmount|NoteAmount|CarryingAmount|BookValue)Member$/i;
 const NEUTRAL_LABEL_SET = new Set(['장부금액', '공시금액', '합계', '계', '총계', '장부금액합계', '기말장부금액', '공시금액합계']);
+const BORROW_SCOPE_MEM_RE = /(CurrentMember|NoncurrentMember|ShortTermFinancialLiabilities|LongTermFinancialLiabilities|CurrentFinancialLiabilities|NoncurrentFinancialLiabilities|AmortisedCost|AmortizedCost)Member$/i;
+const BORROW_SCOPE_KO = new Set(['유동', '비유동', '단기금융부채', '장기금융부채', '유동금융부채', '비유동금융부채', '단기금융부채내역', '장기금융부채내역', '상각후원가', '상각후원가측정금융부채']);
 const INTEREST_CAT_RE = /(FinanceIncome|FinanceCost|FinancialIncome|FinancialCost)/i;
 const INTEREST_CAT_KO = new Set(['금융수익', '금융원가', '금융비용', '금융수익및금융비용', '금융수익과금융비용']);
 
-const GENERIC_MEASURE_RE = /(DisclosedAmount|DisclosureAmount|ReportedAmount|CarryingAmount|FinancialLiabilities|CurrentFinancialLiabilities|NoncurrentFinancialLiabilities|Borrowings|LeaseLiabilities|FinanceCosts|FinanceIncome|Interest|Adjustments|Amount|Balance|Details?)$/i;
+const GENERIC_MEASURE_RE = /(DisclosedAmount|DisclosureAmount|ReportedAmount|CarryingAmount|FinancialLiabilit(y|ies)|Borrowings|LeaseLiabilit(y|ies)|FinanceCosts|FinanceIncome|Interest|Adjustments|Amount|Balance|Details?|Breakdown|Note|AmortisedCost|AmortizedCost)$/i;
+const NON_MONEY_MEASURE_RE = /(Rate|Ratio|Percent|Maturity|Date|Period|Number|Count|Shares|Quantity|FairValue|Notional|Nominal|Collateral|Guarantee|Limit|Text|Description|Name|Currency)$/i;
+const NON_MONEY_MEASURE_KO_RE = /(이자율|금리|비율|만기|수량|주식수|공정가치|약정|한도|담보|보증|통화|명칭)/;
 const NON_CASH_CTX_RE = /(NonCash|Noncash|SignificantNonCash|CashFlowSupplemental|비현금)/i;
 const NON_CASH_FACT_KO_RE = /^(차입금의|사채의)유동성대체$/;
-const GENERIC_MEASURE_KO = new Set(['공시금액', '장부금액', '금액', '당기금액', '기말금액', '조정항목', '단기금융부채', '장기금융부채', '유동금융부채', '비유동금융부채', '금융부채', '리스부채', '금융수익', '금융원가', '금융비용']);
+const GENERIC_MEASURE_KO = new Set(['공시금액', '장부금액', '금액', '당기금액', '기말금액', '조정항목', '단기금융부채', '장기금융부채', '유동금융부채', '비유동금융부채', '단기금융부채내역', '장기금융부채내역', '금융부채', '리스부채', '금융수익', '금융원가', '금융비용']);
 const NON_SEGMENT = /(Total|Elimination|Adjustment|Reconcil|Consolidat|Unallocated|InterSegment|^ifrs-full_(OperatingSegments|ReportableSegments|AllOtherSegments)Member$)/i;
 const NON_SEGMENT_KO = /(합계|총계|소계|조정|제거|내부거래|연결|미배분|공통)/;
 
-const cleanKo = (s) => String(s || '').replace(/[\s·ㆍ:：\-]/g, '');
+const cleanKo = (s) => String(s || '').replace(/\[[^\]]*\]/g, '').replace(/[\s·ㆍ:：\-]/g, '');
 const qEnd = (y, q) => `${y}-${['', '03-31', '06-30', '09-30', '12-31'][q]}`;
 const qStart = (y, q) => `${y}-${['', '01-01', '04-01', '07-01', '10-01'][q]}`;
 
@@ -6105,8 +6134,8 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
     return -1;
   };
 
-  /** 중립 차원 판별 (FSS DART CarryingAmount...Axis 공시금액·장부금액, 상각비 변동표의 감가상각누계액 열 허용) */
-  const isNeutralDim = (d, { extraInterestCat = false, allowAccumDep = false } = {}) => {
+  /** 중립 차원 판별 (FSS DART CarryingAmount...Axis 공시금액·장부금액, 상각비 변동표 누계열, 차입금 표 범위 차원 허용) */
+  const isNeutralDim = (d, { extraInterestCat = false, allowAccumDep = false, allowBorrowScope = false } = {}) => {
     const mLbls = allCleanLabels(d.member);
     if (CARRYING_AXIS_RE.test(d.axis)) {
       const memRe = allowAccumDep ? CONTRA_CARRYING_DEP_MEM_RE : CONTRA_CARRYING_MEM_RE;
@@ -6115,12 +6144,18 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
       if (mLbls.some((t) => koRe.test(t))) return false;
       return true;
     }
-    if (NEUTRAL_MEMBER_RE.test(d.member)) return true;
+    if (NEUTRAL_MEMBER_RE.test(d.member) || NEUTRAL_ANY_PREFIX_RE.test(d.member)) return true;
     if (mLbls.some((t) => NEUTRAL_LABEL_SET.has(t))) return true;
     if (extraInterestCat && (INTEREST_CAT_RE.test(d.member) || mLbls.some((t) => INTEREST_CAT_KO.has(t)))) return true;
+    if (allowBorrowScope && (BORROW_SCOPE_MEM_RE.test(d.member) || mLbls.some((t) => BORROW_SCOPE_KO.has(t)))) return true;
     return false;
   };
   const isGenericMeasure = (c) => GENERIC_MEASURE_RE.test(localOf(c)) || allCleanLabels(c).some((t) => GENERIC_MEASURE_KO.has(t));
+  const isMoneyMeasure = (c) => !NON_MONEY_MEASURE_RE.test(localOf(c)) && !allCleanLabels(c).some((t) => NON_MONEY_MEASURE_KO_RE.test(t));
+  const allCleanLabelsWithTyped = (m) => {
+    if (m && m.startsWith('typed_')) return [cleanKo(m.slice(6))];
+    return allCleanLabels(m);
+  };
 
   const isNonCashCtx = (ctx) => NON_CASH_CTX_RE.test(ctx.id) || ctx.dims.some((d) =>
     NON_CASH_CTX_RE.test(d.axis) || NON_CASH_CTX_RE.test(d.member) || allCleanLabels(d.member).some((t) => /비현금/.test(t)));
@@ -6137,7 +6172,7 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
    *  - tier 1: 개별 개념(f.c) 매칭, 금융수익/원가 보조 차원 사용(extraInterestCat)
    *  - tier 2: 범용 측정 개념 + 단일 비중립 차원 멤버 라벨 정확 일치 (방식 B)
    */
-  function collectFacts(def, matchCtx, { allowNeutral = true, keepSign = false, extraInterestCat = false, allowAccumDep = false, excludeNonCash = false, requireCtx = null, sameTableOf = null } = {}) {
+  function collectFacts(def, matchCtx, { allowNeutral = true, keepSign = false, extraInterestCat = false, allowAccumDep = false, allowBorrowScope = false, allowAnyMoneyMeasure = false, excludeNonCash = false, requireCtx = null, sameTableOf = null } = {}) {
     const out = [];
     for (const f of facts) {
       if (requireCtx && f.ctx !== requireCtx) continue;
@@ -6145,8 +6180,8 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
       if (!matchCtx(ctx) || !fsOk(ctx)) continue;
       if (excludeNonCash && (isNonCashCtx(ctx) || isNonCashFact(f))) continue;
       const ex = extraDims(ctx);
-      const nonNeutralBase = ex.filter((d) => !isNeutralDim(d, { extraInterestCat: false, allowAccumDep }));
-      const nonNeutral = extraInterestCat ? ex.filter((d) => !isNeutralDim(d, { extraInterestCat: true, allowAccumDep })) : nonNeutralBase;
+      const nonNeutralBase = ex.filter((d) => !isNeutralDim(d, { extraInterestCat: false, allowAccumDep, allowBorrowScope }));
+      const nonNeutral = extraInterestCat ? ex.filter((d) => !isNeutralDim(d, { extraInterestCat: true, allowAccumDep, allowBorrowScope })) : nonNeutralBase;
       const usedIntCat = extraInterestCat && nonNeutralBase.length > 0 && nonNeutral.length === 0;
 
       // 방식 A: 개별 개념 매칭
@@ -6164,16 +6199,17 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
         continue;
       }
 
-      // 방식 B: 차원 멤버 표 매칭 (단일 비중립 멤버의 한글 라벨 정확 일치 + 범용 측정 개념)
-      if (nonNeutral.length === 1 && isGenericMeasure(f.c)) {
+      // 방식 B: 차원 멤버 표 매칭 (단일 비중립 멤버의 한글 라벨 정확 일치 + 금액 측정 개념)
+      if (nonNeutral.length === 1 && (isGenericMeasure(f.c) || (allowAnyMoneyMeasure && isMoneyMeasure(f.c)))) {
         const mem = nonNeutral[0].member;
         const ax = nonNeutral[0].axis;
         if (sameTableOf && (sameTableOf.mode !== 'B' || sameTableOf.baseC !== f.c || sameTableOf.axis !== ax)) continue;
-        const mi = labelIndex(mem, def.l);
+        let mi = labelIndex(mem, def.l);
+        if (mi < 0 && mem.startsWith('typed_')) mi = def.l.indexOf(cleanKo(mem.slice(6)));
         if (mi >= 0) {
-          const rank = 2000 + mi * 10 + ex.length;
+          const rank = 2000 + mi * 10 + ex.length + (isGenericMeasure(f.c) ? 0 : 200);
           out.push({
-            tier: 2, rank, value: keepSign ? f.v : Math.abs(f.v), concept: `${f.c}[${mem}]`, label: labels[mem] || localOf(mem),
+            tier: 2, rank, value: keepSign ? f.v : Math.abs(f.v), concept: `${f.c}[${mem}]`, label: mem.startsWith('typed_') ? mem.slice(6) : (labels[mem] || localOf(mem)),
             ctx: f.ctx, mode: 'B', baseC: f.c, axis: ax, exactBsLabel: true,
           });
         }
@@ -6202,15 +6238,15 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
   const instantScalar = (def, dateStr, opts = {}) =>
     pickFact(def, (ctx) => ctx.instant === dateStr, { allowNeutral: true, ...opts });
 
-  /** 주석 17·18 세부정보의 '차감 : 유동성대체' 추출(총액 기준 — 유동성장기차입금·유동성사채 교차검증 및 보조) */
-  function liquidityTransferOf(dateStr, baseConcepts) {
+  /** 주석 17·18 세부정보의 '차감 : 유동성대체' 추출(표준 ID + 회사 확장 개념 모두 지원) */
+  function liquidityTransferOf(dateStr, baseDef) {
     for (const f of facts) {
-      if (!baseConcepts.includes(f.c)) continue;
+      if (!baseDef.c.includes(f.c) && labelIndex(f.c, baseDef.l) < 0) continue;
       const ctx = contexts[f.ctx];
       if (ctx.instant !== dateStr || !fsOk(ctx) || isNonCashCtx(ctx)) continue;
       const ex = extraDims(ctx);
       if (!ex.length) continue;
-      const hit = ex.some((d) => allCleanLabels(d.member).some((t) => {
+      const hit = ex.some((d) => allCleanLabelsWithTyped(d.member).some((t) => {
         const s = t.replace(/[()]/g, '');
         return /^(차감)?유동성대체(액|분|금액)?$|^유동성대체차감$/.test(s);
       }));
@@ -6225,6 +6261,47 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
   }
 
   /**
+   * 유동성장기차입금·유동성사채 전용 할인차금 유연 탐색:
+   *  - 동일 표/컨텍스트 1순위 → 표 구조가 다르거나 다중 차원인 경우 동일 날짜의 전용 할인차금(개념·멤버 한글/영문 패턴) 2순위
+   *  - 안전장치: 공정가치·비현금 제외, 할인차금 크기는 원금의 20% 미만만 허용
+   */
+  function findCurrentDiscount(dKey, dateStr, g, transfer) {
+    const bOpts = { keepSign: true, excludeNonCash: true, allowBorrowScope: true, allowAnyMoneyMeasure: true };
+    const same = instantScalar(BORROW_NOTE[dKey], dateStr, { ...bOpts, sameTableOf: g });
+    if (same && Math.abs(same.value) > 0 && Math.abs(same.value) < g.value * 0.2) return same;
+    // 유동성장기차입금·유동성사채가 이미 순액인지 방어(세부표 총액과 일치하거나 isGrossTransfer이거나 별도 표 전용 할인차금이 존재할 때만 차감)
+    const likelyGross = g.isGrossTransfer || !transfer || Math.abs(g.value - transfer.value) <= transfer.value * 0.005;
+    if (!likelyGross) return null;
+    const any = instantScalar(BORROW_NOTE[dKey], dateStr, bOpts);
+    if (any && Math.abs(any.value) > 0 && Math.abs(any.value) < g.value * 0.2) return any;
+    const flex = DISC_FLEX_RE[dKey];
+    if (!flex) return null;
+    let best = null;
+    for (const f of facts) {
+      if (!Number.isFinite(f.v) || f.v === 0) continue;
+      const absV = Math.abs(f.v);
+      if (absV >= g.value * 0.2) continue;
+      const ctx = contexts[f.ctx];
+      if (ctx.instant !== dateStr || !fsOk(ctx) || isNonCashCtx(ctx)) continue;
+      if (!isMoneyMeasure(f.c)) continue;
+      const ex = extraDims(ctx);
+      if (ex.some((d) => CONTRA_CARRYING_MEM_RE.test(d.member) || allCleanLabelsWithTyped(d.member).some((t) => CONTRA_CARRYING_KO_RE.test(t)))) continue;
+      const cHit = flex.en.test(localOf(f.c)) || allCleanLabels(f.c).some((t) => flex.ko.test(t));
+      const mHit = !cHit && ex.find((d) => flex.en.test(localOf(d.member)) || allCleanLabelsWithTyped(d.member).some((t) => flex.ko.test(t)));
+      if (!cHit && !mHit) continue;
+      const rank = (cHit ? 0 : 100) + ex.length * 10 + (f.v < 0 ? 0 : 5);
+      if (!best || rank < best.rank) {
+        best = {
+          rank, value: f.v,
+          concept: cHit ? f.c : `${f.c}[${mHit.member}]`,
+          label: cHit ? (labels[f.c] || localOf(f.c)) : (mHit.member.startsWith('typed_') ? mHit.member.slice(6) : (labels[mHit.member] || localOf(mHit.member))),
+        };
+      }
+    }
+    return best;
+  }
+
+  /**
    * 유동성장기차입금·유동성사채 정밀 선택:
    *  - 비현금거래(주석 31 '차입금의 유동성 대체' 등) 오매칭을 차단하고
    *  - 주석 17 단기금융부채 내역(정확한 한글 라벨·할인차금 동반·세부표 '차감:유동성대체' 일치)을 최우선 선택
@@ -6232,10 +6309,11 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
   function pickCurrentMaturity(gKey, dKey, dateStr, transfer) {
     const def = BORROW_NOTE[gKey];
     const discDef = BORROW_NOTE[dKey];
-    const cands = collectFacts(def, (ctx) => ctx.instant === dateStr, { allowNeutral: true, excludeNonCash: true });
+    const bOpts = { allowNeutral: true, excludeNonCash: true, allowBorrowScope: true, allowAnyMoneyMeasure: true };
+    const cands = collectFacts(def, (ctx) => ctx.instant === dateStr, bOpts);
     if (cands.length) {
       const scored = cands.map((cand) => {
-        const hasDisc = !!instantScalar(discDef, dateStr, { keepSign: true, sameTableOf: cand, excludeNonCash: true });
+        const hasDisc = !!instantScalar(discDef, dateStr, { keepSign: true, sameTableOf: cand, excludeNonCash: true, allowBorrowScope: true, allowAnyMoneyMeasure: true });
         const matchesTr = !!(transfer && transfer.value > 0 && Math.abs(cand.value - transfer.value) <= transfer.value * 0.02);
         const score = cand.rank - (matchesTr ? 2500 : 0) - (hasDisc ? 1500 : 0) - (cand.exactBsLabel ? 800 : 0);
         return { cand, hasDisc, matchesTr, score };
@@ -6251,18 +6329,19 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
     return transfer || null;
   }
 
-  /** 차입금 7종 + 할인차금 4종 순장부금액 계산 (동일 표/컨텍스트 할인차금만 차감해 이중 차감 방지) */
+  /** 차입금 7종 + 할인차금 4종 순장부금액 계산 (동일 표/컨텍스트 할인차금 우선 차감, 유동성 대체 총액은 전용 할인차금 유연 매칭) */
   function buildBorrowSnapshot(dateStr) {
-    const ltTransfer = liquidityTransferOf(dateStr, BORROW_NOTE.longBorrow.c);
-    const bdTransfer = liquidityTransferOf(dateStr, BORROW_NOTE.bonds.c);
+    const bOpts = { excludeNonCash: true, allowBorrowScope: true, allowAnyMoneyMeasure: true };
+    const ltTransfer = liquidityTransferOf(dateStr, BORROW_NOTE.longBorrow);
+    const bdTransfer = liquidityTransferOf(dateStr, BORROW_NOTE.bonds);
     const main = {
-      shortBorrow: instantScalar(BORROW_NOTE.shortBorrow, dateStr, { excludeNonCash: true }),
+      shortBorrow: instantScalar(BORROW_NOTE.shortBorrow, dateStr, bOpts),
       currentLongBorrow: pickCurrentMaturity('currentLongBorrow', 'currentLongDisc', dateStr, ltTransfer),
       currentBonds: pickCurrentMaturity('currentBonds', 'currentBondsDisc', dateStr, bdTransfer),
-      currentLease: instantScalar(BORROW_NOTE.currentLease, dateStr, { excludeNonCash: true }),
-      longBorrow: instantScalar(BORROW_NOTE.longBorrow, dateStr, { excludeNonCash: true }),
-      bonds: instantScalar(BORROW_NOTE.bonds, dateStr, { excludeNonCash: true }),
-      longLease: instantScalar(BORROW_NOTE.longLease, dateStr, { excludeNonCash: true }),
+      currentLease: instantScalar(BORROW_NOTE.currentLease, dateStr, bOpts),
+      longBorrow: instantScalar(BORROW_NOTE.longBorrow, dateStr, bOpts),
+      bonds: instantScalar(BORROW_NOTE.bonds, dateStr, bOpts),
+      longLease: instantScalar(BORROW_NOTE.longLease, dateStr, bOpts),
     };
 
     // 실제로 사채와 결합된 계정명(예: 유동성장기차입금및사채)일 때만 유동성사채 중복 합산 방지 — '(사채 포함)' 괄호 주석은 제외
@@ -6273,20 +6352,19 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
     // 보조: 유동·비유동 리스부채가 모두 미분리이면 총리스부채(ifrs-full_LeaseLiabilities)로 대체 반영
     let totalLeaseFallback = null;
     if (!main.currentLease && !main.longLease) {
-      totalLeaseFallback = instantScalar(BORROW_NOTE.totalLease, dateStr, { excludeNonCash: true });
+      totalLeaseFallback = instantScalar(BORROW_NOTE.totalLease, dateStr, bOpts);
     }
 
     const foundKeys = BORROW_MAIN_KEYS.filter((k) => main[k] !== null);
     if (!foundKeys.length && !totalLeaseFallback) return null;
 
-    // 할인차금은 동일 표/컨텍스트에서 우선 차감, 단 세부표 '차감:유동성대체'(총액 확정)는 별도 표 할인차금도 허용
-    const netPair = (gKey, dKey) => {
+    // 할인차금 차감: 장기차입금·사채는 동일 표만(이중차감 원천 차단), 유동성장기차입금·유동성사채는 전용 유연 탐색 적용
+    const netPair = (gKey, dKey, tr = null) => {
       const g = main[gKey];
       if (!g) return null;
-      let d = instantScalar(BORROW_NOTE[dKey], dateStr, { keepSign: true, sameTableOf: g, excludeNonCash: true });
-      if (!d && g.isGrossTransfer) {
-        d = instantScalar(BORROW_NOTE[dKey], dateStr, { keepSign: true, excludeNonCash: true });
-      }
+      const d = (gKey === 'currentLongBorrow' || gKey === 'currentBonds')
+        ? findCurrentDiscount(dKey, dateStr, g, tr)
+        : instantScalar(BORROW_NOTE[dKey], dateStr, { keepSign: true, sameTableOf: g, excludeNonCash: true, allowBorrowScope: true, allowAnyMoneyMeasure: true });
       const disc = d ? Math.abs(d.value) : 0;
       const val = disc > 0 && g.value >= disc ? g.value - disc : g.value;
       return { gross: g.value, disc, net: val, concept: g.concept, label: g.label, discLabel: d ? d.label : null };
@@ -6295,8 +6373,8 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
 
     const items = {
       shortBorrow: simple(main.shortBorrow),
-      currentLongBorrow: netPair('currentLongBorrow', 'currentLongDisc'),
-      currentBonds: netPair('currentBonds', 'currentBondsDisc'),
+      currentLongBorrow: netPair('currentLongBorrow', 'currentLongDisc', ltTransfer),
+      currentBonds: netPair('currentBonds', 'currentBondsDisc', bdTransfer),
       currentLease: simple(main.currentLease),
       longBorrow: netPair('longBorrow', 'longBorrowDisc'),
       bonds: netPair('bonds', 'bondsDisc'),
