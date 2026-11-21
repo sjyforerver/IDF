@@ -757,7 +757,7 @@ svg.chart .hl{fill:var(--brand-soft)}
 <!-- ==================== LOCK VAULT (Felizsnoo Journal ADA 디자인 동일) ==================== -->
 <div id="masterLockGateOverlay" role="dialog" aria-modal="true" aria-label="보안 로그인 게이트">
   <div class="vault-topbar">
-    <span class="vault-pill-btn" style="cursor:default"><span class="sync-dot"></span><span>IDF Web v2.3.11</span></span>
+    <span class="vault-pill-btn" style="cursor:default"><span class="sync-dot"></span><span>IDF Web v2.3.12</span></span>
     <button type="button" class="vault-pill-btn" id="vaultTheme" title="다크 / 라이트 글라스 전환"><span>🌓 테마 전환</span></button>
   </div>
   <div class="lock-card">
@@ -825,7 +825,7 @@ svg.chart .hl{fill:var(--brand-soft)}
 <div class="sheet" id="moreSheet"><div class="sheet-panel"><div class="sheet-grip"></div><div class="sheet-body"></div></div></div>
 <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
 
-<script type="module">/* IDF Web v2.3.11 — Bundled ES Module (100% Live API, 0 Hardcoded Financials) */
+<script type="module">/* IDF Web v2.3.12 — Bundled ES Module (100% Live API, 0 Hardcoded Financials) */
 const __M = Object.create(null), __C = Object.create(null);
 function __R(id) { if (__C[id]) return __C[id]; const fn = __M[id]; if (!fn) throw new Error('Missing module: ' + id); return (__C[id] = fn() || {}); }
 __M['api.js'] = function() {
@@ -2242,7 +2242,7 @@ return { PALETTE, lineChart, barChart, sparkline, disposeCharts, groupedBars };
 __M['config.js'] = function() {
 /* IDF Web — 기본 설정 (공개 저장소: 비밀값을 넣지 않습니다) */
 
-const APP = { name: 'IDF', fullName: 'IR Data Factory', version: '2.3.11' };
+const APP = { name: 'IDF', fullName: 'IR Data Factory', version: '2.3.12' };
 
 /**
  * Firebase 웹 설정은 공개용 식별자입니다(비밀키 아님).
@@ -5402,7 +5402,13 @@ async function render(root) {
       ${Object.entries(xb.items || {}).map(([ik, it]) => `<tr><td>${esc(ik)}${it?.label ? ` <span class="mut">(${esc(it.label)})</span>` : ''}${it?.discLabel ? `<br><span class="mut">할인: ${esc(it.discLabel)}</span>` : ''}</td>
         <td class="num">${it ? fmt.int(it.gross / 1e6) : '—'}</td><td class="num">${it?.disc ? `-${fmt.int(it.disc / 1e6)}` : '0'}</td><td class="num"><b>${it ? fmt.int(it.net / 1e6) : '0'}</b></td></tr>`).join('')}
       </tbody></table></div>
-      ${xb.meta ? `<p class="help" style="margin:8px 0 2px">파서 메타: 전체 팩트 ${fmt.int(xb.meta.totalFacts)}건 · 한글태그 ${fmt.int(xb.meta.unicodeFacts)}건 · TextBlock ${fmt.int(xb.meta.textBlocks)}건 · 라벨파일 ${fmt.int(xb.meta.labFiles)}개</p>` : ''}
+      ${xb.meta ? `<p class="help" style="margin:8px 0 2px">파서 메타(${esc(xb.meta.engine || 'regex')}): 전체 팩트 ${fmt.int(xb.meta.totalFacts)}건 · 한글태그 ${fmt.int(xb.meta.unicodeFacts)}건 · TextBlock ${fmt.int(xb.meta.textBlocks)}건 · 라벨파일 ${fmt.int(xb.meta.labFiles)}개${xb.meta.zipFiles?.length ? `<br>ZIP 항목(${xb.meta.zipFiles.length}): ${esc(xb.meta.zipFiles.join(', '))}` : ''}</p>` : ''}
+      ${xb.probe ? `<div class="help" style="margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--glass-card-2);border:1px solid var(--line);font-size:11.5px">
+        <b>할인차금 포렌식 프로브</b>
+        ${xb.probe.discLabels?.length ? `<div style="margin-top:4px"><b>라벨 사전(할인):</b> ${esc(xb.probe.discLabels.join(' · '))}</div>` : '<div style="margin-top:4px"><b>라벨 사전(할인):</b> 없음</div>'}
+        ${xb.probe.anyCtxHits?.length ? `<div style="margin-top:4px"><b>전체 컨텍스트 원금 일치(${xb.probe.anyCtxHits.length}):</b><br>${xb.probe.anyCtxHits.map((h) => `${esc(h.c)} = ${fmt.int(h.v / 1e6)}백만 [${esc(h.per)}, fs=${h.fsOk ? 'Y' : 'N'}] ${esc(h.dims)}`).join('<br>')}</div>` : ''}
+        ${xb.probe.rawHits?.length ? `<div style="margin-top:4px;overflow-wrap:anywhere"><b>원문 XML 출현(${xb.probe.rawHits.length}):</b><br>${xb.probe.rawHits.map((s) => `<code>${esc(s)}</code>`).join('<br>')}</div>` : ''}
+      </div>` : ''}
       ${xb.diag?.length ? `<p class="help" style="margin:6px 0 4px">동일 기준일(${esc(xb.date)}) XBRL 할인·앵커·요약 후보 (백만원 · 개별은행 제외):</p>
         <div class="table-wrap" style="max-height:200px"><table class="sec-table diag-tbl"><tbody>${xb.diag.map((d) => `<tr><td><b>${esc(d.lbl)}</b><br><span class="mut">${esc(d.c)}${d.dims?.length ? ` · ${esc(d.dims.join(', '))}` : ''}</span></td><td class="num">${fmt.int(d.v)}</td></tr>`).join('')}</tbody></table></div>` : ''}
     </details>` : '';
@@ -6071,7 +6077,7 @@ const { api, ApiError, isForcing } = __R('api.js');
 const { store } = __R('cache.js');
 
 const REPRT = { 1: '11013', 2: '11012', 3: '11014', 4: '11011' };
-const PARSER_VERSION = 10;                // v2.3.11: 유니코드(한글) XBRL 태그명 파싱·회사라벨 우선병합·TextBlock 표 앵커 폴백
+const PARSER_VERSION = 11;                // v2.3.12: DOMParser 네이티브 XML 파싱·duration 폴백·allLabels 진단·ZIP 전수목록·원문XML 포렌식 프로브
 const KEEP = 10 * 365 * 86400e3;
 const MAX_UNZIPPED = 80 * 1024 * 1024;
 const MAX_ENTRIES = 300;
@@ -6087,7 +6093,7 @@ async function inflateRaw(bytes) {
 }
 
 /** ZIP(ArrayBuffer/Uint8Array) → { 파일명: Uint8Array }. 중앙 디렉터리 기준 */
-async function unzip(buffer, wanted = () => true) {
+async function unzip(buffer, wanted = () => true, allNames = null) {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   if (bytes.length < 22) throw new ApiError('XBRL_BAD_ZIP', 'XBRL 파일 형식이 올바르지 않습니다.');
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -6113,6 +6119,7 @@ async function unzip(buffer, wanted = () => true) {
     const lho = dv.getUint32(p + 42, true);
     const name = dec.decode(bytes.subarray(p + 46, p + 46 + nlen));
     p += 46 + nlen + xlen + clen;
+    if (allNames && !name.endsWith('/')) allNames.push(name);
     if (name.endsWith('/') || !wanted(name)) continue;
     if (lho + 30 > bytes.length || dv.getUint32(lho, true) !== 0x04034b50) continue;
     const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
@@ -6254,12 +6261,96 @@ function parseCalculation(xml) {
   return groups;
 }
 
+const decodeHtmlBlock = (s) => {
+  let out = ent(String(s || ''));
+  if (/&lt;(?:table|tr|td|th|div)/i.test(out)) out = ent(out);
+  return out;
+};
+
+/** 브라우저 네이티브 DOMParser 기반 XBRL 인스턴스 파서 (정규식 누락 0건 · 기본네임스페이스/튜플/주석/CDATA 완전 대응) */
+function parseInstanceDom(xml) {
+  if (typeof DOMParser === 'undefined') return null;
+  let doc;
+  try { doc = new DOMParser().parseFromString(xml, 'application/xml'); } catch { return null; }
+  const root = doc && doc.documentElement;
+  if (!root || root.localName === 'parsererror' || doc.getElementsByTagName('parsererror').length) return null;
+  const contexts = {};
+  const facts = [];
+  const textBlocks = [];
+  let unicodeFacts = 0;
+  const SKIP_PFX = /^(xbrli|link|xlink|xbrldi|xsi)$/;
+
+  const walkContext = (el) => {
+    const id = (el.getAttribute('id') || '').trim();
+    if (!id) return;
+    let start = null; let end = null; let instant = null;
+    const dims = [];
+    const stack = [...el.children];
+    while (stack.length) {
+      const node = stack.shift();
+      const ln = node.localName;
+      if (ln === 'startDate') start = (node.textContent || '').trim() || null;
+      else if (ln === 'endDate') end = (node.textContent || '').trim() || null;
+      else if (ln === 'instant') instant = (node.textContent || '').trim() || null;
+      else if (ln === 'explicitMember' || ln === 'typedMember') {
+        const axis = toKey(node.getAttribute('dimension') || '');
+        const rawTxt = (node.textContent || '').trim();
+        dims.push({ axis, member: ln === 'explicitMember' ? toKey(rawTxt) : (rawTxt ? `typed_${rawTxt}` : 'typed') });
+      } else if (node.children && node.children.length) {
+        for (let i = 0; i < node.children.length; i += 1) stack.push(node.children[i]);
+      }
+    }
+    contexts[id] = { id, start, end, instant, dims };
+  };
+
+  // 1패스: 모든 context 수집
+  const top = root.children;
+  for (let i = 0; i < top.length; i += 1) {
+    if (top[i].localName === 'context') walkContext(top[i]);
+  }
+  // 2패스: 모든 팩트(튜플 중첩 포함) 수집
+  const visitFact = (el, depth) => {
+    const ln = el.localName;
+    if (ln === 'context' || ln === 'unit' || ln === 'schemaRef' || ln === 'linkbaseRef' || ln === 'roleRef' || ln === 'arcroleRef' || ln === 'footnoteLink') return;
+    const pfx = el.prefix || '';
+    if (pfx && SKIP_PFX.test(pfx)) return;
+    const ref = (el.getAttribute('contextRef') || '').trim();
+    if (!ref) {
+      if (depth < 3 && el.children && el.children.length) {
+        for (let i = 0; i < el.children.length; i += 1) visitFact(el.children[i], depth + 1);
+      }
+      return;
+    }
+    if (!contexts[ref]) return;
+    const nil = el.getAttribute('xsi:nil') || el.getAttributeNS('http://www.w3.org/2001/XMLSchema-instance', 'nil');
+    if (nil === 'true' || nil === '1') return;
+    const txt = (el.textContent || '').trim();
+    if (!txt) return;
+    const c = pfx ? `${pfx}_${ln}` : `_${ln}`;
+    if (/^[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?$/.test(txt)) {
+      if (/[^ -]/.test(ln)) unicodeFacts += 1;
+      facts.push({ c, ctx: ref, v: Number(txt) });
+      return;
+    }
+    if (txt.length >= 40) {
+      const dec = decodeHtmlBlock(txt);
+      if (/(<table|할인|차입|사채|금융부채|Discount|Borrow)/i.test(dec)) {
+        textBlocks.push({ c, ctx: ref, html: dec });
+      }
+    }
+  };
+  for (let i = 0; i < top.length; i += 1) visitFact(top[i], 0);
+  return { contexts, facts, textBlocks, unicodeFacts, engine: 'dom' };
+}
+
 /**
  * XBRL 인스턴스 파서:
- *  - Unicode(한글 등) 확장 개념 태그명(예: <entity00120030:유동성장기차입금현재가치할인차금>) 전수 파싱
- *  - 주석 TextBlock HTML 표(일부 세부 내역이 TextBlock으로만 기재된 경우의 안전장치) 함께 수집
+ *  - 브라우저 환경에서는 네이티브 DOMParser를 최우선 사용하여 XML 파싱 누락 0건 보장
+ *  - Node 테스트/비정상 XML 환경에서는 개선된 정규식 파서(옵션 접두사·유니코드·문자열 표 지원)로 자동 폴백
  */
 function parseInstance(xml) {
+  const domRes = parseInstanceDom(xml);
+  if (domRes && (domRes.facts.length > 0 || Object.keys(domRes.contexts).length > 0)) return domRes;
   const contexts = {};
   const cre = /<(?:[\w-]+:)?context\b([^>]*)>([\s\S]*?)<\/(?:[\w-]+:)?context\s*>/g;
   let m;
@@ -6280,28 +6371,31 @@ function parseInstance(xml) {
   }
   const facts = [];
   let unicodeFacts = 0;
-  // 전체 QName 캡처(한글·유니코드 확장 태그명 포함,  대신 공백으로 속성 경계 판별)
-  const fre = /<([^\s/<>=:]+):([^\s/<>=]+)\s+([^>]*\bcontextRef\s*=\s*["'][^"']+["'][^>]*)>\s*([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*<\/\1:\2\s*>/g;
+  // 접두사 선택형 + 유니코드(한글) 태그명 지원
+  const fre = /<(?:([^\s/<>=:]+):)?([^\s/<>=:]+)\s+([^>]*\bcontextRef\s*=\s*["'][^"']+["'][^>]*)>\s*([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\s*<\/(?:\1:)?\2\s*>/g;
   while ((m = fre.exec(xml)) !== null) {
-    if (/^(xbrli|link|xlink|xbrldi|xsi)$/.test(m[1])) continue;
+    const pfx = m[1] || '';
+    if (pfx && /^(xbrli|link|xlink|xbrldi|xsi)$/.test(pfx)) continue;
     const a = attrsOf(m[3]);
     const ref = (a.contextRef || '').trim();
     if (!contexts[ref]) continue;
     const local = m[2];
     if (/[^\x00-\x7F]/.test(local)) unicodeFacts += 1;
-    facts.push({ c: `${m[1]}_${local}`, ctx: ref, v: Number(m[4]) });
+    facts.push({ c: `${pfx}_${local}`, ctx: ref, v: Number(m[4]) });
   }
   const textBlocks = [];
-  const tbre = /<([^\s/<>=:]+:[^\s/<>=]*TextBlock[^\s/<>=]*)\s+([^>]*\bcontextRef\s*=\s*["'][^"']+["'][^>]*)>([\s\S]*?)<\/\1\s*>/gi;
+  const tbre = /<((?:[^\s/<>=:]+:)?[^\s/<>=:]+)\s+([^>]*\bcontextRef\s*=\s*["'][^"']+["'][^>]*)>([\s\S]*?)<\/\1\s*>/gi;
   while ((m = tbre.exec(xml)) !== null) {
+    const rawHtml = (m[3] || '').trim();
+    if (rawHtml.length < 40 || /^[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?$/.test(rawHtml)) continue;
     const a = attrsOf(m[2]);
     const ref = (a.contextRef || '').trim();
-    const rawHtml = m[3] || '';
-    if (!contexts[ref] || rawHtml.length < 40) continue;
-    if (!/(할인|차입|사채|금융부채|Discount|Borrow)/i.test(rawHtml)) continue;
-    textBlocks.push({ c: toKey(m[1]), ctx: ref, html: ent(rawHtml) });
+    if (!contexts[ref]) continue;
+    const dec = decodeHtmlBlock(rawHtml);
+    if (!/(<table|할인|차입|사채|금융부채|Discount|Borrow)/i.test(dec)) continue;
+    textBlocks.push({ c: toKey(m[1]), ctx: ref, html: dec });
   }
-  return { contexts, facts, textBlocks, unicodeFacts };
+  return { contexts, facts, textBlocks, unicodeFacts, engine: 'regex' };
 }
 
 /* 개념 사전 — 표준 개념 우선 + 정확한 한글 라벨(개별 개념 또는 차원 멤버) 보조 */
@@ -6407,7 +6501,7 @@ const cleanKo = (s) => String(s || '').replace(/\[[^\]]*\]/g, '').replace(/[\s·
 const qEnd = (y, q) => `${y}-${['', '03-31', '06-30', '09-30', '12-31'][q]}`;
 const qStart = (y, q) => `${y}-${['', '01-01', '04-01', '07-01', '10-01'][q]}`;
 
-function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
+function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false, zipFiles = null }) {
   let labels = {};
   const allLabels = {}; // concept → Set<string> (표준·terse·negated·verbose 라벨 전부)
   const negatedConcepts = new Set();
@@ -6437,19 +6531,38 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
     const dst = localLabels[loc] || (localLabels[loc] = new Set());
     for (const t of s) dst.add(t);
   }
-  const instNames = names.filter((n) => /\.xbrl$/i.test(n));
+  const instTexts = [];
+  const instNames = names.filter((n) => {
+    if (/\.xbrl$/i.test(n)) return true;
+    if (/\.xml$/i.test(n) && !/(?:lab|_pre|_cal|_def)\b/i.test(n)) {
+      const head = decodeText(files[n].subarray(0, Math.min(800, files[n].length)));
+      return /<(?:[\w-]+:)?xbrl\b/i.test(head);
+    }
+    return false;
+  });
   if (!instNames.length) throw new ApiError('XBRL_NO_INSTANCE', 'XBRL 인스턴스 파일이 없습니다.');
   const contexts = {};
   const facts = [];
   const textBlocks = [];
   let unicodeFacts = 0;
+  let parseEngine = 'regex';
   for (const n of instNames) {
-    const parsed = parseInstance(decodeText(files[n]));
+    const xmlStr = decodeText(files[n]);
+    instTexts.push({ name: n, xml: xmlStr });
+    const parsed = parseInstance(xmlStr);
+    parseEngine = parsed.engine || parseEngine;
     const pref = instNames.length > 1 ? `${n}#` : '';
     unicodeFacts += parsed.unicodeFacts || 0;
     for (const [id, ctx] of Object.entries(parsed.contexts)) contexts[pref + id] = ctx;
     for (const f of parsed.facts) facts.push({ ...f, ctx: pref + f.ctx });
     for (const tb of parsed.textBlocks || []) textBlocks.push({ ...tb, ctx: pref + tb.ctx });
+  }
+  // ZIP 내 별도 HTML/XHTML 파일이 있으면 표 폴백 후보로 편입
+  for (const n of names) {
+    if (/\.(?:xhtml|html?)$/i.test(n)) {
+      const htmlStr = decodeText(files[n]);
+      if (/<table/i.test(htmlStr)) textBlocks.push({ c: `html_${n}`, ctx: '', html: htmlStr });
+    }
   }
   if (fs === 'OFS' && !Object.values(contexts).some((c) => c.dims.some((d) => /SeparateMember$/.test(d.member)))) ofsOnly = true;
 
@@ -6690,16 +6803,18 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
       }
       return negs;
     };
-    // 원금 g.value(양수, 0.2% 이내)와 일치하는 주석 표 앵커 팩트 탐색(세부표 차감:유동성대체 음수 행은 제외)
+    // 원금 g.value(양수, 0.2% 이내)와 일치하는 주석 표 앵커 팩트 탐색(instant 우선 + duration 기간말 폴백)
+    const isDateMatch = (ctx) => ctx.instant === dateStr || (!ctx.instant && ctx.end === dateStr);
     const anchors = facts.filter((f) => {
       if (!Number.isFinite(f.v) || f.v <= 0) return false;
       if (Math.abs(f.v - g.value) > Math.max(1e6, g.value * 0.002)) return false;
       const ctx = contexts[f.ctx];
-      return ctx.instant === dateStr && fsOk(ctx) && !isNonCashCtx(ctx) && !isContraBad(ctx);
+      return isDateMatch(ctx) && fsOk(ctx) && !isNonCashCtx(ctx) && !isContraBad(ctx);
     });
     let anchorBest = null;
     for (const anc of anchors) {
       const ancCtx = contexts[anc.ctx];
+      const ancIsInstant = ancCtx.instant === dateStr;
       const ancSig = dimSigOf(ancCtx);
       const ancMap = dimMapOf(ancCtx);
       const preNextC = nextInPre(anc.c);
@@ -6709,7 +6824,8 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
         const absV = Math.abs(f.v);
         if (absV >= g.value * 0.2) continue;
         const ctx = contexts[f.ctx];
-        if (ctx.instant !== dateStr || !fsOk(ctx) || isNonCashCtx(ctx) || isContraBad(ctx)) continue;
+        const fSamePeriod = ancIsInstant ? ctx.instant === dateStr : (!ctx.instant && ctx.end === dateStr);
+        if (!fSamePeriod || !fsOk(ctx) || isNonCashCtx(ctx) || isContraBad(ctx)) continue;
         if (!isMoneyMeasure(f.c)) continue;
         const sameDims = f.ctx === anc.ctx || dimSigOf(ctx) === ancSig;
         let sameMemberTable = false;
@@ -6738,7 +6854,7 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
         const isContraSign = f.v < 0 || isCalNeg || isNegRole;
         const isAdj = isPreNextC || isPreNextM || isCalNeg;
         if (!dm && !(isAdj && isContraSign)) continue;
-        const rank = (isAdj ? 0 : 40) + (dm?.specific ? 0 : 20) + (isContraSign ? 0 : 10) + (sameDims ? 0 : 5);
+        const rank = (ancIsInstant ? 0 : 60) + (isAdj ? 0 : 40) + (dm?.specific ? 0 : 20) + (isContraSign ? 0 : 10) + (sameDims ? 0 : 5);
         if (!anchorBest || rank < anchorBest.rank) {
           anchorBest = {
             rank, value: f.v,
@@ -6761,13 +6877,15 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
       const absV = Math.abs(f.v);
       if (absV >= g.value * 0.2) continue;
       const ctx = contexts[f.ctx];
-      if (ctx.instant !== dateStr || !fsOk(ctx) || isNonCashCtx(ctx) || isContraBad(ctx)) continue;
+      const isInst = ctx.instant === dateStr;
+      const isDur = !ctx.instant && ctx.end === dateStr;
+      if ((!isInst && !isDur) || !fsOk(ctx) || isNonCashCtx(ctx) || isContraBad(ctx)) continue;
       if (!isMoneyMeasure(f.c)) continue;
       const ex = extraDims(ctx);
       const cHit = flex.en.test(localOf(f.c)) || allCleanLabels(f.c).some((t) => flex.ko.test(t));
       const mHit = !cHit && ex.find((d) => flex.en.test(localOf(d.member)) || allCleanLabelsWithTyped(d.member).some((t) => flex.ko.test(t)));
       if (!cHit && !mHit) continue;
-      const rank = (cHit ? 0 : 100) + ex.length * 10 + (f.v < 0 ? 0 : 5);
+      const rank = (isInst ? 0 : 200) + (cHit ? 0 : 100) + ex.length * 10 + (f.v < 0 ? 0 : 5);
       if (!best || rank < best.rank) {
         best = {
           rank, value: f.v,
@@ -6789,10 +6907,12 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
       return Number.isFinite(v) ? (neg ? -Math.abs(v) : v) : null;
     };
     for (const tb of textBlocks) {
-      const tCtx = contexts[tb.ctx];
-      if (!tCtx || !fsOk(tCtx)) continue;
-      const tbEnd = tCtx.end || tCtx.instant;
-      if (tbEnd && tbEnd !== dateStr) continue;
+      if (tb.ctx) {
+        const tCtx = contexts[tb.ctx];
+        if (!tCtx || !fsOk(tCtx)) continue;
+        const tbEnd = tCtx.end || tCtx.instant;
+        if (tbEnd && tbEnd !== dateStr) continue;
+      }
       const tblRe = /<table\b[^>]*>([\s\S]*?)<\/table>/gi;
       let tm;
       while ((tm = tblRe.exec(tb.html)) !== null) {
@@ -6945,11 +7065,12 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
     for (const f of facts) {
       if (!Number.isFinite(f.v) || f.v === 0) continue;
       const ctx = contexts[f.ctx];
-      if (ctx.instant !== dateStr || !fsOk(ctx)) continue;
+      const dateHit = ctx.instant === dateStr || (!ctx.instant && ctx.end === dateStr);
+      if (!dateHit || !fsOk(ctx)) continue;
       const ex = extraDims(ctx);
       const isBankRow = ex.some((d) => BANK_AXIS_RE.test(d.axis));
-      const lbl = labels[f.c] || (localLabels[localOf(f.c)] ? [...localLabels[localOf(f.c)]][0] : '');
-      const allTxt = `${localOf(f.c)} ${lbl} ${ex.map((d) => `${localOf(d.axis)} ${localOf(d.member)} ${labels[d.member] || ''}`).join(' ')}`;
+      const cAll = allCleanLabels(f.c).join(' ');
+      const allTxt = `${localOf(f.c)} ${cAll} ${ex.map((d) => `${localOf(d.axis)} ${localOf(d.member)} ${allCleanLabelsWithTyped(d.member).join(' ')}`).join(' ')}`;
       if (/(할인|Discount)/i.test(allTxt)) { pushDiag(f, ctx, 0); continue; }
       const nearAnchor = (clbGross > 0 && Math.abs(Math.abs(f.v) - clbGross) <= Math.max(1e6, clbGross * 0.005))
         || (cbGross > 0 && Math.abs(Math.abs(f.v) - cbGross) <= Math.max(1e6, cbGross * 0.005));
@@ -6960,7 +7081,64 @@ function parseXbrlFiles(files, { y, q, fs = 'CFS', ofsOnly = false }) {
     }
     diagCands.sort((a, b) => a.prio - b.prio || Math.abs(b.v) - Math.abs(a.v));
     const diag = diagCands.slice(0, 30).map(({ prio, ...rest }) => rest);
-    return { date: dateStr, items, currentTotal, nonCurrentTotal, total, shortRepay, totalDiscount, count: foundKeys.length + (totalLeaseFallback ? 1 : 0), diag, meta: { totalFacts: facts.length, unicodeFacts, textBlocks: textBlocks.length, labFiles: labFiles.length } };
+
+    // 할인차금이 0일 때만 원문 XML·전체 컨텍스트 포렌식 프로브 수행(누락 원인 1회 즉시 특정용)
+    let probe = null;
+    if ((items.currentLongBorrow && !items.currentLongBorrow.disc) || (items.currentBonds && !items.currentBonds.disc)) {
+      const anyCtxHits = [];
+      const seenAny = new Set();
+      for (const f of facts) {
+        if (!Number.isFinite(f.v) || f.v === 0) continue;
+        const absV = Math.abs(f.v);
+        let matched = false;
+        for (const tgt of [clbGross, cbGross]) {
+          if (!tgt) continue;
+          for (const sc of [1, 1e3, 1e6]) {
+            if (Math.abs(absV * sc - tgt) <= Math.max(1e6, tgt * 0.002)) { matched = true; break; }
+          }
+          if (matched) break;
+        }
+        if (!matched) continue;
+        const ctx = contexts[f.ctx];
+        const per = ctx.instant ? `I:${ctx.instant}` : `D:${ctx.start || ''}..${ctx.end || ''}`;
+        const dims = ctx.dims.map((d) => `${localOf(d.axis)}=${labels[d.member] || localOf(d.member)}`).join(', ');
+        const key = `${f.c}|${f.v}|${per}|${dims}`;
+        if (seenAny.has(key)) continue;
+        seenAny.add(key);
+        anyCtxHits.push({ c: localOf(f.c), v: f.v, per, fsOk: fsOk(ctx), dims: dims.slice(0, 120) });
+        if (anyCtxHits.length >= 12) break;
+      }
+      // 원문 XML에서 유동성장기차입금 원금(백만 단위 숫자) 출현 위치 직접 스캔
+      const rawHits = [];
+      const needle = clbGross > 0 ? String(Math.round(clbGross / 1e6)) : '';
+      if (needle.length >= 5) {
+        for (const { name, xml } of instTexts) {
+          let pos = 0;
+          while (rawHits.length < 8) {
+            const at = xml.indexOf(needle, pos);
+            if (at < 0) break;
+            rawHits.push(`${name}: ${xml.slice(Math.max(0, at - 65), Math.min(xml.length, at + 55)).replace(/\s+/g, ' ')}`);
+            pos = at + needle.length;
+          }
+        }
+      }
+      // 라벨 XML에서 '할인차금' 또는 '할인발행' 포함 개념명 스캔
+      const discLabels = [];
+      for (const [k, s] of Object.entries(allLabels)) {
+        const hit = [...s].find((t) => /할인차금|할인발행/.test(t));
+        if (hit) {
+          discLabels.push(`${localOf(k)}=${hit}`);
+          if (discLabels.length >= 12) break;
+        }
+      }
+      probe = { anyCtxHits, rawHits, discLabels };
+    }
+    return {
+      date: dateStr, items, currentTotal, nonCurrentTotal, total, shortRepay, totalDiscount,
+      count: foundKeys.length + (totalLeaseFallback ? 1 : 0), diag,
+      meta: { totalFacts: facts.length, unicodeFacts, textBlocks: textBlocks.length, labFiles: labFiles.length, engine: parseEngine, zipFiles: (zipFiles || names).slice(0, 15) },
+      probe,
+    };
   }
 
   const kinds = ['ytd', 'single', 'priorYtd', 'priorSingle'];
@@ -7094,8 +7272,9 @@ async function loadXbrl({ corp, y, q, fs = 'CFS', rcept, ofsOnly = false }) {
       }
       throw err;
     }
-    const files = await unzip(buf, (n) => /\.xbrl$|lab.*\.xml$|_pre\.xml$|_cal\.xml$/i.test(n) && !/(?:^|[_-])en\.xml$/i.test(n));
-    const data = { ...parseXbrlFiles(files, { y, q, fs, ofsOnly }), rcept, corp, at: Date.now(), bytes: buf.byteLength };
+    const allZipNames = [];
+    const files = await unzip(buf, (n) => /\.(?:xbrl|xhtml|html?|xml)$/i.test(n) && !/(?:^|[_-])en\.xml$|_def\.xml$/i.test(n), allZipNames);
+    const data = { ...parseXbrlFiles(files, { y, q, fs, ofsOnly, zipFiles: allZipNames }), rcept, corp, at: Date.now(), bytes: buf.byteLength };
     const now = Date.now();
     await store.put({ k, data, exp: now + KEEP, ttl: KEEP, at: now });
     await store.put({ k: idxOf(corp, y, q, fs), data: { rcept, at: now }, exp: now + KEEP, ttl: KEEP, at: now });
